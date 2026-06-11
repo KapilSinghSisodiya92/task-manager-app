@@ -42,18 +42,17 @@ func main() {
 	r.Post("/api/auth/signup", handlers.SignupHandler)
 	r.Post("/api/auth/login", handlers.LoginHandler)
 
-	// Protected Task Routes Sub-Group
-	r.Route("/api/tasks", func(protectedRouter chi.Router) {
+	// Protected Task Routes
+	r.Group(func(protectedRouter chi.Router) {
 		// Apply our secure authentication middleware gatekeeper
 		protectedRouter.Use(customMiddleware.AuthMiddleware)
 
-		protectedRouter.Post("/", handlers.CreateTaskHandler)
-		protectedRouter.Get("/", handlers.ListTasksHandler)
-
-		// Add single resource sub-routes
-		protectedRouter.Get("/{id}", handlers.GetTaskHandler)
-		protectedRouter.Patch("/{id}", handlers.UpdateTaskHandler)
-		protectedRouter.Delete("/{id}", handlers.DeleteTaskHandler)
+		// Map the explicit endpoints clearly without nested sub-route conflicts
+		protectedRouter.Post("/api/tasks", handlers.CreateTaskHandler)
+		protectedRouter.Get("/api/tasks", handlers.ListTasksHandler)
+		protectedRouter.Get("/api/tasks/{id}", handlers.GetTaskHandler)
+		protectedRouter.Patch("/api/tasks/{id}", handlers.UpdateTaskHandler)
+		protectedRouter.Delete("/api/tasks/{id}", handlers.DeleteTaskHandler)
 	})
 
 	port := os.Getenv("PORT")

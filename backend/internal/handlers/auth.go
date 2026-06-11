@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/yourusername/task-manager/internal/database"
-	"github.com/yourusername/task-manager/internal/models"
+	"github.com/kapilsinghsisodiya/task-manager/internal/database"
+	"github.com/kapilsinghsisodiya/task-manager/internal/models"
 )
 
 type AuthRequest struct {
