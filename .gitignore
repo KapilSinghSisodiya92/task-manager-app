@@ -1,0 +1,22 @@
+# IDEs
+.idea/
+.vscode/
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Backend (Go / Environment)
+backend/main
+backend/.env
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/.env
+frontend/.env.local
