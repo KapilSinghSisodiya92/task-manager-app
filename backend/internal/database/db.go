@@ -34,6 +34,7 @@ func InitDB() *sql.DB {
 	DB = db
 
 	createUsersTable()
+	createTasksTable() // Execute our new tasks table routine
 	return db
 }
 
@@ -52,4 +53,25 @@ func createUsersTable() {
 		log.Fatalf("Could not create users table: %v\n", err)
 	}
 	fmt.Println("Users table checked/created successfully.")
+}
+
+func createTasksTable() {
+	query := `
+	CREATE TABLE IF NOT EXISTS tasks (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+		title VARCHAR(255) NOT NULL,
+		description TEXT,
+		status VARCHAR(50) DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'completed')),
+		priority VARCHAR(50) DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+		due_date TIMESTAMP WITH TIME ZONE,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	_, err := DB.Exec(query)
+	if err != nil {
+		log.Fatalf("Could not create tasks table: %v\n", err)
+	}
+	fmt.Println("Tasks table checked/created successfully.")
 }
