@@ -112,7 +112,7 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 }
 
-// ListTasksHandler handles GET /api/tasks (With pagination and status filtering)
+// ListTasksHandler handles GET /api/tasks (With dynamic filtration, search, pagination, and sorting)
 func ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -123,12 +123,14 @@ func ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Read Query Parameters for Filtering & Pagination
+	// 1. Read Query Parameters
 	statusFilter := r.URL.Query().Get("status")
+	searchQuery := r.URL.Query().Get("search")
+	sortBy := r.URL.Query().Get("sortBy")       // created_at, due_date, priority
+	sortOrder := r.URL.Query().Get("sortOrder") // asc, desc
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 
-	// Set defaults for pagination
 	limit := 10
 	offset := 0
 
@@ -143,7 +145,7 @@ func ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 2. Build SQL Query Dynamically based on filters
+	// 2. Build Base SQL Statement
 	baseQuery := `SELECT id, user_id, title, description, status, priority, due_date, created_at, updated_at 
 	              FROM tasks WHERE user_id = $1`
 
@@ -151,32 +153,60 @@ func ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 	args = append(args, userID)
 	argCount := 2
 
+	// Status Filter Mapping
 	if statusFilter != "" {
 		baseQuery += fmt.Sprintf(" AND status = $%d", argCount)
 		args = append(args, strings.ToLower(statusFilter))
 		argCount++
 	}
 
-	// Append sorting (default newest first) and pagination
-	baseQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	// Title Full-Text Search Mapping
+	if searchQuery != "" {
+		baseQuery += fmt.Sprintf(" AND title ILIKE $%d", argCount)
+		args = append(args, "%"+searchQuery+"%")
+		argCount++
+	}
+
+	// 3. Dynamic Order Evaluation Sanitization
+	validSortColumns := map[string]string{
+		"created_at": "created_at",
+		"due_date":   "due_date",
+		"priority":   "CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END",
+	}
+
+	sortColumn, exists := validSortColumns[strings.ToLower(sortBy)]
+	if !exists {
+		sortColumn = "created_at" // Default fallback sorting parameter
+	}
+
+	if strings.ToLower(sortOrder) != "asc" {
+		sortOrder = "DESC"
+	} else {
+		sortOrder = "ASC"
+	}
+
+	baseQuery += fmt.Sprintf(" ORDER BY %s %s", sortColumn, sortOrder)
+
+	// Append Pagination
+	baseQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCount, argCount+1)
 	args = append(args, limit, offset)
 
-	// 3. Execute Query
+	// 4. Execution Routine
 	rows, err := database.DB.Query(baseQuery, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to fetch tasks: " + err.Error()})
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to query tasks: " + err.Error()})
 		return
 	}
 	defer rows.Close()
 
-	tasks := []models.Task{}
+	tasks := make([]models.Task, 0)
 	for rows.Next() {
 		var t models.Task
 		err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Priority, &t.DueDate, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(ErrorResponse{Error: "Error parsing task records"})
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed parsing result structures"})
 			return
 		}
 		tasks = append(tasks, t)
