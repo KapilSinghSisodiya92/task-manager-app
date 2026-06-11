@@ -49,6 +49,11 @@ func main() {
 
 		protectedRouter.Post("/", handlers.CreateTaskHandler)
 		protectedRouter.Get("/", handlers.ListTasksHandler)
+
+		// Add single resource sub-routes
+		protectedRouter.Get("/{id}", handlers.GetTaskHandler)
+		protectedRouter.Patch("/{id}", handlers.UpdateTaskHandler)
+		protectedRouter.Delete("/{id}", handlers.DeleteTaskHandler)
 	})
 
 	port := os.Getenv("PORT")
