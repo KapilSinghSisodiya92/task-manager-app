@@ -9,13 +9,17 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
-	"github.com/yourusername/task-manager/internal/database"
-	"github.com/yourusername/task-manager/internal/handlers"
+	"github.com/kapilsinghsisodiya/task-manager/internal/database"
+	"github.com/kapilsinghsisodiya/task-manager/internal/handlers"
+	customMiddleware "github.com/kapilsinghsisodiya/task-manager/internal/middleware"
 )
 
 func main() {
-	// Load environment variables from root or backend directory if present
-	_ = godotenv.Load()
+	// Explicitly check if loading the .env file fails
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Warning: No .env file found, relying on system environment variables")
+	}
 
 	// Initialize Database
 	database.InitDB()
@@ -37,6 +41,15 @@ func main() {
 	// Auth Public Routes
 	r.Post("/api/auth/signup", handlers.SignupHandler)
 	r.Post("/api/auth/login", handlers.LoginHandler)
+
+	// Protected Task Routes Sub-Group
+	r.Route("/api/tasks", func(protectedRouter chi.Router) {
+		// Apply our secure authentication middleware gatekeeper
+		protectedRouter.Use(customMiddleware.AuthMiddleware)
+
+		protectedRouter.Post("/", handlers.CreateTaskHandler)
+		protectedRouter.Get("/", handlers.ListTasksHandler)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
