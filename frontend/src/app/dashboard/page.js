@@ -132,7 +132,8 @@ export default function Dashboard() {
   const toggleComplete = async (task) => {
     const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
     try {
-      const res = await fetch(`http://localhost:8080/api/tasks/${task.id}`, {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${API_BASE_URL}/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
