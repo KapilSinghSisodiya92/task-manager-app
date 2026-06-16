@@ -129,6 +129,12 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (!authLoading && !token) {
+      router.push('/login');
+    }
+  }, [token, authLoading, router]);
+  
   const toggleComplete = async (task) => {
     const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
     try {
