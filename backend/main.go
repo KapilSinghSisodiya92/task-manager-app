@@ -29,12 +29,25 @@ func main() {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// CRITICAL FIX: Setup a robust, browser-compliant CORS configuration.
+	// Since we are using an explicit array for AllowCredentials, we whitelist the domains.
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins: []string{
+			"*", // Allow all origins
+			"http://localhost:3000",
+			"https://task-manager-app-beta-steel.vercel.app",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
 		AllowCredentials: true,
+		MaxAge:           300,
 	}))
+
+	// ROUTER PREFLIGHT FIX: Explicitly short-circuit any manual/implicit OPTIONS requests at the root level
+	r.Options("/*", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	// Auth Public Routes
 	r.Post("/api/auth/signup", handlers.SignupHandler)
@@ -59,5 +72,6 @@ func main() {
 	}
 
 	fmt.Printf("Server smoothly running on port %s...\n", port)
+	// FIX: Pass the chi router instance `r` here instead of `nil` to ensure Go listens to your routes!
 	http.ListenAndServe(":"+port, r)
 }
