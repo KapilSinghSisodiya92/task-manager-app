@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/api';
 import { LogOut, Plus, Trash2, CheckCircle, Circle, ChevronLeft, ChevronRight, Loader2, X, Search, ArrowUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -32,7 +33,7 @@ export default function Dashboard() {
 
   const loadTasks = useCallback(async (authToken) => {
     const offset = (page - 1) * limit;
-    let url = `http://localhost:8080/api/tasks?limit=${limit}&offset=${offset}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+    let url = `${API_BASE_URL}/api/tasks?limit=${limit}&offset=${offset}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
 
     if (statusFilter) url += `&status=${statusFilter}`;
     if (searchQuery.trim()) url += `&search=${encodeURIComponent(searchQuery.trim())}`;
@@ -98,7 +99,7 @@ export default function Dashboard() {
     setFormSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:8080/api/tasks', {
+      const res = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,11 +135,10 @@ export default function Dashboard() {
       router.push('/login');
     }
   }, [token, authLoading, router]);
-  
+
   const toggleComplete = async (task) => {
     const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const res = await fetch(`${API_BASE_URL}/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: {
@@ -157,7 +157,7 @@ export default function Dashboard() {
   const deleteTask = async (id) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/tasks/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/api';
 import Link from 'next/link';
 
 export default function Signup() {
@@ -33,7 +34,6 @@ export default function Signup() {
     setSubmitting(true);
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
